@@ -159,8 +159,22 @@
       border: 1px solid var(--border);
     }
 
-    .time-progress .info {
+    .time-progress-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
       margin-bottom: 10px;
+    }
+
+    .time-progress-head span:first-child {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .time-progress-head span:last-child {
+      text-align: right;
+      font-weight: 850;
+      font-size: 13px;
     }
 
     .time-progress-track {
@@ -392,7 +406,7 @@
       </div>
 
       <div class="time-progress">
-        <div class="info"><span>Proje süre ilerleme</span><span id="timeProgressText">-</span></div>
+        <div class="time-progress-head"><span>Proje süre ilerleme</span><span id="timeProgressText">-</span></div>
         <div class="time-progress-track">
           <div
             id="timeProgressFill"
