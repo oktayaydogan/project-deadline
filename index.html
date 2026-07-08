@@ -119,7 +119,7 @@
     }
 
     .timer-value {
-      font-size: clamp(26px, 5vw, 42px);
+      font-size: clamp(23px, 4.6vw, 38px);
       font-weight: 950;
       letter-spacing: -1.8px;
     }
@@ -423,6 +423,7 @@
         <div class="info"><span>Proje</span><span id="viewTitle">-</span></div>
         <div class="info"><span>Proje başlangıç</span><span id="viewStartDate">-</span></div>
         <div class="info"><span>Deadline</span><span id="viewDeadline">-</span></div>
+        <div class="info"><span>Gerçek çalışma günü (kalan)</span><span id="workingDaysLeft">-</span></div>
         <div class="info"><span>Sıradaki siren</span><span id="nextSirenAt">-</span></div>
         <div class="info"><span>Sabit sirenler</span><span>10:00 / 14:00 / 17:00</span></div>
         <div class="info"><span>Ekstra sıklık</span><span id="nextInfo">-</span></div>
@@ -500,6 +501,20 @@
     const LAST_MINUTE_KEY = "deadline_siren_last_minute";
 
     const FIXED_SIREN_TIMES = ["10:00", "14:00", "17:00"];
+    const FIXED_PUBLIC_HOLIDAYS_MMDD = new Set([
+      "01-01", // Yilbasi
+      "04-23", // Ulusal Egemenlik ve Cocuk Bayrami
+      "05-01", // Emek ve Dayanisma Gunu
+      "05-19", // Ataturk'u Anma, Genclik ve Spor Bayrami
+      "07-15", // Demokrasi ve Milli Birlik Gunu
+      "08-30", // Zafer Bayrami
+      "10-29"  // Cumhuriyet Bayrami
+    ]);
+    const EXTRA_PUBLIC_HOLIDAYS_YYYY_MM_DD = new Set([
+      // Dini/resmi tatiller yil bazli degisebilir, gerekirse bu listeyi guncelle.
+      "2026-03-20", "2026-03-21", "2026-03-22",
+      "2026-05-27", "2026-05-28", "2026-05-29", "2026-05-30"
+    ]);
 
     /*
       MP3 base64 buraya gelecek.
@@ -659,6 +674,57 @@
       if (remainingMinutes > 180) return 30;
       if (remainingMinutes > 60) return 15;
       return 10;
+    }
+
+    function toLocalDateKey(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
+    function toMonthDayKey(date) {
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${month}-${day}`;
+    }
+
+    function isPublicHoliday(date) {
+      const fullDateKey = toLocalDateKey(date);
+      const monthDayKey = toMonthDayKey(date);
+      return EXTRA_PUBLIC_HOLIDAYS_YYYY_MM_DD.has(fullDateKey) || FIXED_PUBLIC_HOLIDAYS_MMDD.has(monthDayKey);
+    }
+
+    function countRemainingWorkingDays(now, deadline) {
+      if (deadline <= now) return 0;
+
+      const cursor = new Date(now);
+      cursor.setHours(0, 0, 0, 0);
+
+      const end = new Date(deadline);
+      end.setHours(0, 0, 0, 0);
+
+      let count = 0;
+
+      while (cursor <= end) {
+        const weekend = cursor.getDay() === 0 || cursor.getDay() === 6;
+        if (!weekend && !isPublicHoliday(cursor)) {
+          count += 1;
+        }
+        cursor.setDate(cursor.getDate() + 1);
+      }
+
+      return count;
+    }
+
+    function formatMonthWeekDay(totalDays) {
+      const safeDays = Math.max(0, totalDays);
+      const months = Math.floor(safeDays / 30);
+      const remainingAfterMonths = safeDays % 30;
+      const weeks = Math.floor(remainingAfterMonths / 7);
+      const days = remainingAfterMonths % 7;
+
+      return `${months} ay, ${weeks} hf ${days} g`;
     }
 
     function timeToMinutes(hhmm) {
@@ -883,6 +949,7 @@
         document.getElementById("viewTitle").textContent = "-";
         document.getElementById("viewStartDate").textContent = "-";
         document.getElementById("viewDeadline").textContent = "-";
+        document.getElementById("workingDaysLeft").textContent = "-";
         document.getElementById("nextSirenAt").textContent = "-";
         document.getElementById("remaining").textContent = "-";
         document.getElementById("viewStartTime").textContent = "--:--";
@@ -914,11 +981,13 @@
       const timeProgress = getProjectRemainingPercent(project, now);
       const projectStart = new Date(project.startedAt);
       const nextSiren = getNextSirenDate(project, now);
+      const workingDaysLeft = countRemainingWorkingDays(now, deadline);
 
       document.getElementById("mainTitle").textContent = project.title;
       document.getElementById("viewTitle").textContent = project.title;
       document.getElementById("viewStartDate").textContent = projectStart.toLocaleString("tr-TR");
       document.getElementById("viewDeadline").textContent = deadline.toLocaleString("tr-TR");
+      document.getElementById("workingDaysLeft").textContent = formatMonthWeekDay(workingDaysLeft);
       document.getElementById("nextSirenAt").textContent = nextSiren ? formatSirenDateTime(nextSiren) : "Yok";
       document.getElementById("viewStartTime").textContent = projectStart.toLocaleDateString("tr-TR");
       document.getElementById("viewEndTime").textContent = deadline.toLocaleDateString("tr-TR");
