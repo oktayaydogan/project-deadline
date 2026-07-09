@@ -297,16 +297,19 @@
     .btn-primary {
       color: #082f49;
       background: linear-gradient(135deg, #38bdf8, #67e8f9);
+      border: 1px solid var(--border);
     }
 
     .btn-secondary {
       color: var(--text);
       background: rgba(255, 255, 255, .1);
+      border: 1px solid var(--border);
     }
 
     .btn-danger {
       color: white;
       background: rgba(251, 113, 133, .85);
+      border: 1px solid var(--border);
     }
 
     .siren-btn {
@@ -581,7 +584,7 @@
       <div class="info-list">
         <div class="info"><span>Proje</span><span id="viewTitle">-</span></div>
         <div class="info"><span>Proje başlangıç</span><span id="viewStartDate">-</span></div>
-        <div class="info"><span>Deadline</span><span id="viewDeadline">-</span></div>
+        <div class="info"><span>Proje bitiş</span><span id="viewDeadline">-</span></div>
         <div class="info"><span>Gerçek çalışma günü (kalan)</span><span id="workingDaysLeft">-</span></div>
         <div class="info"><span>Sıradaki siren</span><span id="nextSirenAt">-</span></div>
         <div class="info"><span>Sabit sirenler</span><span>10:00 / 14:00 / 17:00</span></div>
@@ -626,7 +629,7 @@
         placeholder="Örn: Mobil App Teslimi"
       />
 
-      <label>Deadline tarih/saat</label>
+      <label>Proje bitiş tarih/saat</label>
       <input
         id="deadline"
         type="datetime-local"
@@ -874,7 +877,7 @@ time_end=${endTime}`;
       }
 
       if (!project.title || !project.deadline) {
-        showToast("Proje adı ve deadline zorunlu.");
+        showToast("Proje adı ve proje bitiş zorunlu.");
         return;
       }
 
@@ -1118,9 +1121,22 @@ time_end=${endTime}`;
       return date.toLocaleString("tr-TR", {
         day: "2-digit",
         month: "2-digit",
+        year: "numeric",
         hour: "2-digit",
         minute: "2-digit"
       });
+    }
+
+    function formatInterval(minutes) {
+      if (minutes >= 1440) {
+        const days = Math.floor(minutes / 1440);
+        return `${minutes} dakikada bir (${days} günde bir)`;
+      }
+      if (minutes >= 60) {
+        const hours = Math.floor(minutes / 60);
+        return `${minutes} dakikada bir (${hours} saatte bir)`;
+      }
+      return `${minutes} dakikada bir`;
     }
 
     function getNextSirenDate(project, now) {
@@ -1281,7 +1297,7 @@ time_end=${endTime}`;
       const remaining = formatRemaining(diffMs);
       document.getElementById("remainingDate").textContent = remaining.date;
       document.getElementById("remainingTime").textContent = remaining.time;
-      document.getElementById("nextInfo").textContent = expired ? "Pasif" : `${interval} dakikada bir`;
+      document.getElementById("nextInfo").textContent = expired ? "Pasif" : formatInterval(interval);
 
       if (expired) {
         statusText.textContent = "Deadline geçti";
