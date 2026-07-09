@@ -1124,6 +1124,18 @@ time_end=${endTime}`;
       });
     }
 
+    function formatInterval(minutes) {
+      if (minutes >= 1440) {
+        const days = Math.floor(minutes / 1440);
+        return `${minutes} dakikada bir (${days} günde bir)`;
+      }
+      if (minutes >= 60) {
+        const hours = Math.floor(minutes / 60);
+        return `${minutes} dakikada bir (${hours} saatte bir)`;
+      }
+      return `${minutes} dakikada bir`;
+    }
+
     function getNextSirenDate(project, now) {
       const deadline = new Date(project.deadline);
       if (now >= deadline) return null;
@@ -1282,7 +1294,7 @@ time_end=${endTime}`;
       const remaining = formatRemaining(diffMs);
       document.getElementById("remainingDate").textContent = remaining.date;
       document.getElementById("remainingTime").textContent = remaining.time;
-      document.getElementById("nextInfo").textContent = expired ? "Pasif" : `${interval} dakikada bir`;
+      document.getElementById("nextInfo").textContent = expired ? "Pasif" : formatInterval(interval);
 
       if (expired) {
         statusText.textContent = "Deadline geçti";
