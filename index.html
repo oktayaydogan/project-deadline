@@ -581,7 +581,7 @@
       <div class="info-list">
         <div class="info"><span>Proje</span><span id="viewTitle">-</span></div>
         <div class="info"><span>Proje başlangıç</span><span id="viewStartDate">-</span></div>
-        <div class="info"><span>Deadline</span><span id="viewDeadline">-</span></div>
+        <div class="info"><span>Proje bitiş</span><span id="viewDeadline">-</span></div>
         <div class="info"><span>Gerçek çalışma günü (kalan)</span><span id="workingDaysLeft">-</span></div>
         <div class="info"><span>Sıradaki siren</span><span id="nextSirenAt">-</span></div>
         <div class="info"><span>Sabit sirenler</span><span>10:00 / 14:00 / 17:00</span></div>
@@ -626,7 +626,7 @@
         placeholder="Örn: Mobil App Teslimi"
       />
 
-      <label>Deadline tarih/saat</label>
+      <label>Proje bitiş tarih/saat</label>
       <input
         id="deadline"
         type="datetime-local"
@@ -874,7 +874,7 @@ time_end=${endTime}`;
       }
 
       if (!project.title || !project.deadline) {
-        showToast("Proje adı ve deadline zorunlu.");
+        showToast("Proje adı ve proje bitiş zorunlu.");
         return;
       }
 
