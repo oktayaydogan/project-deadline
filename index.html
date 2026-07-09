@@ -120,8 +120,19 @@
 
     .timer-value {
       font-size: clamp(23px, 4.6vw, 38px);
+      letter-spacing: -1px;
+    }
+
+    .timer-value > div {
+      display: inline;
+    }
+    .timer-value > #remainingDate {
       font-weight: 950;
-      letter-spacing: -1.8px;
+    }
+
+    .timer-value-time {
+      opacity: 0.85;
+      margin-left: 12px;
     }
 
     .info-list {
@@ -547,10 +558,10 @@
 
       <div class="timer">
         <div class="timer-label">Kalan süre</div>
-        <div
-          id="remaining"
-          class="timer-value"
-        >-</div>
+        <div class="timer-value">
+          <div id="remainingDate">-</div>
+          <div id="remainingTime" class="timer-value-time">-</div>
+        </div>
       </div>
 
       <div class="time-progress">
@@ -999,7 +1010,7 @@ time_end=${endTime}`;
       const weeks = Math.floor(remainingAfterMonths / 7);
       const days = remainingAfterMonths % 7;
 
-      return `${months} ay, ${weeks} hf ${days} g`;
+      return `${months} ay ${weeks} hf ${days} g`;
     }
 
     function timeToMinutes(hhmm) {
@@ -1186,7 +1197,7 @@ time_end=${endTime}`;
     }
 
     function formatRemaining(ms) {
-      if (ms <= 0) return "Süre doldu";
+      if (ms <= 0) return { date: "Süre doldu", time: "" };
 
       const totalSeconds = Math.floor(ms / 1000);
       let remainingSeconds = totalSeconds;
@@ -1210,7 +1221,10 @@ time_end=${endTime}`;
       const minutes = Math.floor(remainingSeconds / 60);
       const seconds = remainingSeconds % 60;
 
-      return `${months} ay, ${weeks} hf ${days} g ${hours} s ${minutes} dk ${seconds} sn`;
+      return {
+        date: `${months} ay ${weeks} hf ${days} g`,
+        time: `${hours} s ${minutes} dk ${seconds} sn`
+      };
     }
 
     function render() {
@@ -1226,7 +1240,8 @@ time_end=${endTime}`;
         document.getElementById("viewDeadline").textContent = "-";
         document.getElementById("workingDaysLeft").textContent = "-";
         document.getElementById("nextSirenAt").textContent = "-";
-        document.getElementById("remaining").textContent = "-";
+        document.getElementById("remainingDate").textContent = "-";
+        document.getElementById("remainingTime").textContent = "-";
         document.getElementById("viewStartTime").textContent = "--:--";
         document.getElementById("viewEndTime").textContent = "--:--";
         document.getElementById("timeProgressText").textContent = "-";
@@ -1263,7 +1278,9 @@ time_end=${endTime}`;
       document.getElementById("viewEndTime").textContent = deadline.toLocaleDateString("tr-TR");
       document.getElementById("timeProgressText").textContent = `Kalan: %${Math.round(timeProgress)}`;
       document.getElementById("timeProgressFill").style.width = `${timeProgress.toFixed(2)}%`;
-      document.getElementById("remaining").textContent = formatRemaining(diffMs);
+      const remaining = formatRemaining(diffMs);
+      document.getElementById("remainingDate").textContent = remaining.date;
+      document.getElementById("remainingTime").textContent = remaining.time;
       document.getElementById("nextInfo").textContent = expired ? "Pasif" : `${interval} dakikada bir`;
 
       if (expired) {
