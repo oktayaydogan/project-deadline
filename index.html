@@ -622,9 +622,16 @@
 
       if (isShown) {
         syncSettingsInputs();
+        // Calculate scrollbar width before hiding overflow
+        const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+        if (scrollbarWidth > 0) {
+          const currentPadding = parseInt(window.getComputedStyle(document.body).paddingRight) || 0;
+          document.body.style.paddingRight = `${currentPadding + scrollbarWidth}px`;
+        }
         document.body.style.overflow = "hidden";
       } else {
         document.body.style.overflow = "";
+        document.body.style.paddingRight = "";
       }
     }
 
