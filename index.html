@@ -832,7 +832,7 @@
       const weeks = Math.floor(remainingAfterMonths / 7);
       const days = remainingAfterMonths % 7;
 
-      return `${months} ay, ${weeks} hf ${days} g`;
+      return `${months} ay ${weeks} hf ${days} g`;
     }
 
     function timeToMinutes(hhmm) {
@@ -1043,7 +1043,7 @@
       const minutes = Math.floor(remainingSeconds / 60);
       const seconds = remainingSeconds % 60;
 
-      return `${months} ay, ${weeks} hf ${days} g ${hours} s ${minutes} dk ${seconds} sn`;
+      return `${months} ay ${weeks} hf ${days} g ${hours} s ${minutes} dk ${seconds} sn`;
     }
 
     function render() {
