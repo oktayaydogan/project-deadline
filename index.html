@@ -165,10 +165,11 @@
       letter-spacing: -1px;
     }
 
-    .timer-value > div {
+    .timer-value>div {
       display: inline;
     }
-    .timer-value > #remainingDate {
+
+    .timer-value>#remainingDate {
       font-weight: 950;
     }
 
@@ -633,7 +634,10 @@
         <div class="timer-label">Kalan süre</div>
         <div class="timer-value">
           <div id="remainingDate">-</div>
-          <div id="remainingTime" class="timer-value-time">-</div>
+          <div
+            id="remainingTime"
+            class="timer-value-time"
+          >-</div>
         </div>
       </div>
 
@@ -687,8 +691,15 @@
         <h2 class="modal-title">Proje Ayarları</h2>
         <div style="display: flex; gap: 12px; align-items: center;">
           <div class="view-toggle">
-            <button onclick="switchView('form')" id="formViewBtn" class="active">Form</button>
-            <button onclick="switchView('bulk')" id="bulkViewBtn">Bulk</button>
+            <button
+              onclick="switchView('form')"
+              id="formViewBtn"
+              class="active"
+            >Form</button>
+            <button
+              onclick="switchView('bulk')"
+              id="bulkViewBtn"
+            >Bulk</button>
           </div>
           <button
             class="close-btn"
@@ -700,42 +711,42 @@
 
       <div class="form-view active">
         <label>Proje adı</label>
-      <input
-        id="title"
-        placeholder="Örn: Mobil App Teslimi"
-      />
+        <input
+          id="title"
+          placeholder="Örn: Mobil App Teslimi"
+        />
 
-      <label>Proje bitiş tarih/saat</label>
-      <input
-        id="deadline"
-        type="datetime-local"
-      />
+        <label>Proje bitiş tarih/saat</label>
+        <input
+          id="deadline"
+          type="datetime-local"
+        />
 
-      <label>Proje başlangıç tarih/saat</label>
-      <input
-        id="projectStart"
-        type="datetime-local"
-      />
+        <label>Proje başlangıç tarih/saat</label>
+        <input
+          id="projectStart"
+          type="datetime-local"
+        />
 
-      <div class="row">
-        <div>
-          <label>Aktif başlangıç</label>
-          <input
-            id="startTime"
-            type="time"
-            value="09:00"
-          />
+        <div class="row">
+          <div>
+            <label>Aktif başlangıç</label>
+            <input
+              id="startTime"
+              type="time"
+              value="09:00"
+            />
+          </div>
+
+          <div>
+            <label>Aktif bitiş</label>
+            <input
+              id="endTime"
+              type="time"
+              value="18:00"
+            />
+          </div>
         </div>
-
-        <div>
-          <label>Aktif bitiş</label>
-          <input
-            id="endTime"
-            type="time"
-            value="18:00"
-          />
-        </div>
-      </div>
 
         <div class="actions">
           <button
@@ -839,12 +850,12 @@ time_end=${endTime}`;
     function syncBulkToForm() {
       const bulkText = document.getElementById("bulkEditText").value;
       const lines = bulkText.split('\n');
-      
+
       lines.forEach(line => {
         const [key, value] = line.split('=').map(s => s.trim());
         if (!key || value === undefined) return;
 
-        switch(key) {
+        switch (key) {
           case 'project_name':
             document.getElementById("title").value = value;
             break;
