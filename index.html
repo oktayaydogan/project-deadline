@@ -76,6 +76,48 @@
       font-weight: 900;
     }
 
+    .clock-stage {
+      display: grid;
+      gap: 14px;
+      justify-items: center;
+      text-align: center;
+      padding: 28px 24px 24px;
+      border-radius: 28px;
+      background:
+        radial-gradient(circle at top, rgba(56, 189, 248, .18), transparent 40%),
+        linear-gradient(135deg, rgba(255, 255, 255, .08), rgba(255, 255, 255, .03));
+      border: 1px solid rgba(255, 255, 255, .12);
+      margin: 10px 0 18px;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04);
+    }
+
+    .clock-stage-label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: .16em;
+    }
+
+    .clock-stage-value {
+      color: var(--text);
+      font-size: clamp(48px, 8.8vw, 92px);
+      line-height: .92;
+      letter-spacing: -3.2px;
+      font-weight: 950;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      text-shadow: 0 0 28px rgba(56, 189, 248, .18);
+    }
+
+    .clock-stage-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
     .pulse {
       width: 12px;
       height: 12px;
@@ -547,6 +589,14 @@
 
 <body>
   <main class="app">
+    <div class="clock-stage">
+      <div class="clock-stage-label">Canlı saat</div>
+      <div
+        id="liveClock"
+        class="clock-stage-value"
+      >--:--:--</div>
+    </div>
+
     <section class="card">
       <div class="topbar">
         <div class="badge">
@@ -564,7 +614,7 @@
       </div>
 
       <div class="topbar">
-        <h1 id="mainTitle">Proje alarmı </h1>
+        <h1 id="mainTitle">Proje alarmı</h1>
         <button
           id="playSiren"
           class="siren-btn"
@@ -1269,6 +1319,25 @@ time_end=${endTime}`;
       };
     }
 
+    function updateLiveClock() {
+      const now = new Date();
+      document.getElementById("liveClock").textContent = now.toLocaleTimeString("tr-TR", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit"
+      });
+    }
+
+    function startLiveClock() {
+      updateLiveClock();
+
+      const delay = 1000 - (Date.now() % 1000);
+      setTimeout(function tickClock() {
+        updateLiveClock();
+        setTimeout(tickClock, 1000);
+      }, delay);
+    }
+
     function render() {
       const project = loadProject();
 
@@ -1350,6 +1419,7 @@ time_end=${endTime}`;
       }
     }
 
+    startLiveClock();
     render();
     setInterval(render, 1000);
 
