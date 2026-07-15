@@ -1338,6 +1338,57 @@ time_end=${endTime}`;
       }, delay);
     }
 
+    function getPageRefreshSignature() {
+      return document.querySelector('meta[name="build-signature"]')?.content || '';
+    }
+
+    function setPageRefreshSignature(signature) {
+      let meta = document.querySelector('meta[name="build-signature"]');
+      if (!meta) {
+        meta = document.createElement('meta');
+        meta.name = 'build-signature';
+        document.head.appendChild(meta);
+      }
+
+      meta.content = signature;
+    }
+
+    async function checkForPageUpdate() {
+      if (location.protocol === 'file:') return;
+
+      try {
+        const response = await fetch(location.href, {
+          method: 'HEAD',
+          cache: 'no-store'
+        });
+
+        const remoteSignature = response.headers.get('etag') || response.headers.get('last-modified') || '';
+        if (!remoteSignature) return;
+
+        const localSignature = getPageRefreshSignature();
+        if (!localSignature) {
+          setPageRefreshSignature(remoteSignature);
+          return;
+        }
+
+        if (localSignature !== remoteSignature) {
+          const refreshedUrl = new URL(location.href);
+          refreshedUrl.searchParams.set('v', Date.now().toString());
+          location.replace(refreshedUrl.toString());
+        }
+      } catch {
+        // Network/HEAD check unavailable; keep the current page running.
+      }
+    }
+
+    function startUpdateWatcher() {
+      const initialRefresh = 3000;
+      setTimeout(() => {
+        checkForPageUpdate();
+        setInterval(checkForPageUpdate, 30000);
+      }, initialRefresh);
+    }
+
     function render() {
       const project = loadProject();
 
@@ -1420,6 +1471,7 @@ time_end=${endTime}`;
     }
 
     startLiveClock();
+    startUpdateWatcher();
     render();
     setInterval(render, 1000);
 
