@@ -81,7 +81,7 @@
       gap: 14px;
       justify-items: center;
       text-align: center;
-      padding: 28px 24px 24px;
+      padding: 24px 24px;
       border-radius: 28px;
       background:
         radial-gradient(circle at top, rgba(56, 189, 248, .18), transparent 40%),
@@ -259,16 +259,44 @@
       margin-top: 10px;
       display: flex;
       justify-content: space-between;
+      gap: 14px;
       font-size: 13px;
       font-weight: 850;
     }
 
-    .time-progress-labels span:first-child {
+    .time-progress-stat {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .time-progress-stat:last-child {
+      text-align: right;
+      align-items: flex-end;
+    }
+
+    .time-progress-labels .time-progress-stat:first-child > span:first-child {
       color: var(--danger);
     }
 
-    .time-progress-labels span:last-child {
+    .time-progress-labels .time-progress-stat:last-child > span:first-child {
       color: var(--success);
+    }
+
+    .time-progress-detail {
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 700;
+      opacity: 0.8;
+      white-space: pre;
+    }
+
+    .time-progress-detail-real {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      opacity: 0.9;
+      white-space: pre;
     }
 
     label {
@@ -591,7 +619,6 @@
 <body>
   <main class="app">
     <div class="clock-stage">
-      <div class="clock-stage-label">Canlı saat</div>
       <div
         id="liveClock"
         class="clock-stage-value"
@@ -657,15 +684,32 @@
           ></div>
         </div>
         <div class="time-progress-labels">
-          <span id="elapsedPercent">Geçen: - %</span>
-          <span id="remainingPercent">Kalan: - %</span>
+          <div class="time-progress-stat">
+            <span id="elapsedPercent">Geçen: - %</span>
+            <span
+              id="elapsedDuration"
+              class="time-progress-detail"
+            >-</span>
+            <span
+              id="elapsedRealDuration"
+              class="time-progress-detail-real"
+            >-</span>
+          </div>
+          <div class="time-progress-stat">
+            <span id="remainingPercent">Kalan: - %</span>
+            <span
+              id="remainingDuration"
+              class="time-progress-detail"
+            >-</span>
+            <span
+              id="remainingRealDuration"
+              class="time-progress-detail-real"
+            >-</span>
+          </div>
         </div>
       </div>
 
       <div class="info-list">
-        <div class="info"><span>Proje</span><span id="viewTitle">-</span></div>
-        <div class="info"><span>Gerçek çalışma günü (kalan)</span><span id="workingDaysLeft">-</span></div>
-        <hr />
         <div class="info"><span>Sıradaki siren</span><span id="nextSirenAt">-</span></div>
         <div class="info"><span>Sabit sirenler</span><span>10:00 / 14:00 / 17:00</span></div>
         <div class="info"><span>Ekstra sıklık</span><span id="nextInfo">-</span></div>
@@ -1300,7 +1344,13 @@ time_end=${endTime}`;
     }
 
     function formatRemaining(ms) {
-      if (ms <= 0) return { date: "Süre doldu", time: "" };
+      if (ms <= 0) return {
+        date: "Süre doldu",
+        hours: 0,
+        minutes: 0,
+        seconds: 0,
+        time: ""
+      };
 
       const totalSeconds = Math.floor(ms / 1000);
       let remainingSeconds = totalSeconds;
@@ -1324,10 +1374,68 @@ time_end=${endTime}`;
       const minutes = Math.floor(remainingSeconds / 60);
       const seconds = remainingSeconds % 60;
 
+      const dateParts = [
+        { value: months, label: "ay" },
+        { value: weeks, label: "hf" },
+        { value: days, label: "g" }
+      ];
+
+      const firstNonZeroDatePart = dateParts.findIndex((part) => part.value > 0);
+      const visibleDateParts = (firstNonZeroDatePart === -1 ? [dateParts[dateParts.length - 1]] : dateParts.slice(firstNonZeroDatePart));
+      const dateText = visibleDateParts.map((part) => `${part.value} ${part.label}`).join("   ");
+
       return {
-        date: `${months} ay ${weeks} hf ${days} g`,
-        time: `${hours} s ${minutes} dk ${seconds} sn`
+        date: dateText,
+        hours,
+        minutes,
+        seconds,
+        time: `${hours} s   ${minutes} dk   ${seconds} sn`
       };
+    }
+
+    function formatDurationText(ms, fallback = "0 s 0 dk 0 sn", options = {}) {
+      const duration = formatRemaining(ms);
+      const includeMinutesAndSeconds = options.includeMinutesAndSeconds !== false;
+
+      if (!duration.time) {
+        return duration.date || fallback;
+      }
+
+      if (!includeMinutesAndSeconds) {
+        return `${duration.date}   ${duration.hours} s`;
+      }
+
+      return `${duration.date} ${duration.time}`;
+    }
+
+    function getWeekendExcludedDurationMs(start, end) {
+      const startDate = new Date(start);
+      const endDate = new Date(end);
+
+      if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime()) || endDate <= startDate) {
+        return 0;
+      }
+
+      let totalMs = 0;
+      let cursor = new Date(startDate);
+
+      while (cursor < endDate) {
+        const segmentEnd = new Date(cursor);
+        segmentEnd.setHours(24, 0, 0, 0);
+
+        if (segmentEnd > endDate) {
+          segmentEnd.setTime(endDate.getTime());
+        }
+
+        const isWeekend = cursor.getDay() === 0 || cursor.getDay() === 6;
+        if (!isWeekend) {
+          totalMs += segmentEnd - cursor;
+        }
+
+        cursor = segmentEnd;
+      }
+
+      return totalMs;
     }
 
     function updateLiveClock() {
@@ -1408,15 +1516,17 @@ time_end=${endTime}`;
 
       if (!project) {
         document.getElementById("mainTitle").textContent = "Proje alarmı";
-        document.getElementById("viewTitle").textContent = "-";
-        document.getElementById("workingDaysLeft").textContent = "-";
         document.getElementById("nextSirenAt").textContent = "-";
         document.getElementById("remainingDate").textContent = "-";
         document.getElementById("remainingTime").textContent = "-";
         document.getElementById("viewStartTime").textContent = "-";
         document.getElementById("viewEndTime").textContent = "-";
         document.getElementById("elapsedPercent").textContent = "Geçen: - %";
+        document.getElementById("elapsedDuration").textContent = "-";
+        document.getElementById("elapsedRealDuration").textContent = "-";
         document.getElementById("remainingPercent").textContent = "Kalan: - %";
+        document.getElementById("remainingDuration").textContent = "-";
+        document.getElementById("remainingRealDuration").textContent = "-";
         document.getElementById("timeProgressFill").style.width = "0%";
         document.getElementById("nextInfo").textContent = "-";
         statusText.textContent = "Kurulum bekleniyor";
@@ -1438,17 +1548,29 @@ time_end=${endTime}`;
       const timeProgress = getProjectRemainingPercent(project, now);
       const projectStart = new Date(project.startedAt);
       const nextSiren = getNextSirenDate(project, now);
-      const workingDaysLeft = countRemainingWorkingDays(now, deadline);
 
       document.getElementById("mainTitle").textContent = project.title;
-      document.getElementById("viewTitle").textContent = project.title;
-      document.getElementById("workingDaysLeft").textContent = formatMonthWeekDay(workingDaysLeft);
       document.getElementById("nextSirenAt").textContent = nextSiren ? formatSirenDateTime(nextSiren) : "Yok";
       const elapsedProgress = 100 - timeProgress;
+      const elapsedDurationMs = Math.max(0, now - projectStart);
+      const elapsedRealDurationMs = getWeekendExcludedDurationMs(projectStart, now);
+      const remainingRealDurationMs = getWeekendExcludedDurationMs(now, deadline);
       document.getElementById("viewStartTime").textContent = projectStart.toLocaleString("tr-TR");
       document.getElementById("viewEndTime").textContent = deadline.toLocaleString("tr-TR");
       document.getElementById("elapsedPercent").textContent = `Geçen: %${Math.round(elapsedProgress)}`;
+      document.getElementById("elapsedDuration").textContent = formatDurationText(elapsedDurationMs, "0 s", {
+        includeMinutesAndSeconds: false
+      });
+      document.getElementById("elapsedRealDuration").textContent = formatDurationText(elapsedRealDurationMs, "0 s", {
+        includeMinutesAndSeconds: false
+      });
       document.getElementById("remainingPercent").textContent = `Kalan: %${Math.round(timeProgress)}`;
+      document.getElementById("remainingDuration").textContent = formatDurationText(diffMs, "Süre doldu", {
+        includeMinutesAndSeconds: false
+      });
+      document.getElementById("remainingRealDuration").textContent = formatDurationText(remainingRealDurationMs, "Süre doldu", {
+        includeMinutesAndSeconds: false
+      });
       document.getElementById("timeProgressFill").style.width = `${elapsedProgress.toFixed(2)}%`;
       const remaining = formatRemaining(diffMs);
       document.getElementById("remainingDate").textContent = remaining.date;
