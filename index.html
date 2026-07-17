@@ -259,16 +259,35 @@
       margin-top: 10px;
       display: flex;
       justify-content: space-between;
+      gap: 14px;
       font-size: 13px;
       font-weight: 850;
     }
 
-    .time-progress-labels span:first-child {
+    .time-progress-stat {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .time-progress-stat:last-child {
+      text-align: right;
+      align-items: flex-end;
+    }
+
+    .time-progress-labels .time-progress-stat:first-child > span:first-child {
       color: var(--danger);
     }
 
-    .time-progress-labels span:last-child {
+    .time-progress-labels .time-progress-stat:last-child > span:first-child {
       color: var(--success);
+    }
+
+    .time-progress-detail {
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 700;
+      opacity: 0.8;
     }
 
     label {
@@ -657,8 +676,20 @@
           ></div>
         </div>
         <div class="time-progress-labels">
-          <span id="elapsedPercent">Geçen: - %</span>
-          <span id="remainingPercent">Kalan: - %</span>
+          <div class="time-progress-stat">
+            <span id="elapsedPercent">Geçen: - %</span>
+            <span
+              id="elapsedDuration"
+              class="time-progress-detail"
+            >-</span>
+          </div>
+          <div class="time-progress-stat">
+            <span id="remainingPercent">Kalan: - %</span>
+            <span
+              id="remainingDuration"
+              class="time-progress-detail"
+            >-</span>
+          </div>
         </div>
       </div>
 
@@ -1324,10 +1355,30 @@ time_end=${endTime}`;
       const minutes = Math.floor(remainingSeconds / 60);
       const seconds = remainingSeconds % 60;
 
+      const dateParts = [
+        { value: months, label: "ay" },
+        { value: weeks, label: "hf" },
+        { value: days, label: "g" }
+      ];
+
+      const firstNonZeroDatePart = dateParts.findIndex((part) => part.value > 0);
+      const visibleDateParts = (firstNonZeroDatePart === -1 ? [dateParts[dateParts.length - 1]] : dateParts.slice(firstNonZeroDatePart));
+      const dateText = visibleDateParts.map((part) => `${part.value} ${part.label}`).join(" ");
+
       return {
-        date: `${months} ay ${weeks} hf ${days} g`,
+        date: dateText,
         time: `${hours} s ${minutes} dk ${seconds} sn`
       };
+    }
+
+    function formatDurationText(ms, fallback = "0 s 0 dk 0 sn") {
+      const duration = formatRemaining(ms);
+
+      if (!duration.time) {
+        return duration.date || fallback;
+      }
+
+      return `${duration.date} ${duration.time}`;
     }
 
     function updateLiveClock() {
@@ -1416,7 +1467,9 @@ time_end=${endTime}`;
         document.getElementById("viewStartTime").textContent = "-";
         document.getElementById("viewEndTime").textContent = "-";
         document.getElementById("elapsedPercent").textContent = "Geçen: - %";
+        document.getElementById("elapsedDuration").textContent = "-";
         document.getElementById("remainingPercent").textContent = "Kalan: - %";
+        document.getElementById("remainingDuration").textContent = "-";
         document.getElementById("timeProgressFill").style.width = "0%";
         document.getElementById("nextInfo").textContent = "-";
         statusText.textContent = "Kurulum bekleniyor";
@@ -1445,10 +1498,13 @@ time_end=${endTime}`;
       document.getElementById("workingDaysLeft").textContent = formatMonthWeekDay(workingDaysLeft);
       document.getElementById("nextSirenAt").textContent = nextSiren ? formatSirenDateTime(nextSiren) : "Yok";
       const elapsedProgress = 100 - timeProgress;
+      const elapsedDurationMs = Math.max(0, now - projectStart);
       document.getElementById("viewStartTime").textContent = projectStart.toLocaleString("tr-TR");
       document.getElementById("viewEndTime").textContent = deadline.toLocaleString("tr-TR");
       document.getElementById("elapsedPercent").textContent = `Geçen: %${Math.round(elapsedProgress)}`;
+      document.getElementById("elapsedDuration").textContent = formatDurationText(elapsedDurationMs);
       document.getElementById("remainingPercent").textContent = `Kalan: %${Math.round(timeProgress)}`;
+      document.getElementById("remainingDuration").textContent = formatDurationText(diffMs, "Süre doldu");
       document.getElementById("timeProgressFill").style.width = `${elapsedProgress.toFixed(2)}%`;
       const remaining = formatRemaining(diffMs);
       document.getElementById("remainingDate").textContent = remaining.date;
