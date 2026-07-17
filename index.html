@@ -288,6 +288,7 @@
       font-size: 12px;
       font-weight: 700;
       opacity: 0.8;
+      white-space: pre;
     }
 
     .time-progress-detail-real {
@@ -295,6 +296,7 @@
       font-size: 12px;
       font-weight: 700;
       opacity: 0.9;
+      white-space: pre;
     }
 
     label {
@@ -1384,14 +1386,14 @@ time_end=${endTime}`;
 
       const firstNonZeroDatePart = dateParts.findIndex((part) => part.value > 0);
       const visibleDateParts = (firstNonZeroDatePart === -1 ? [dateParts[dateParts.length - 1]] : dateParts.slice(firstNonZeroDatePart));
-      const dateText = visibleDateParts.map((part) => `${part.value} ${part.label}`).join(" ");
+      const dateText = visibleDateParts.map((part) => `${part.value} ${part.label}`).join("   ");
 
       return {
         date: dateText,
         hours,
         minutes,
         seconds,
-        time: `${hours} s ${minutes} dk ${seconds} sn`
+        time: `${hours} s   ${minutes} dk   ${seconds} sn`
       };
     }
 
@@ -1404,7 +1406,7 @@ time_end=${endTime}`;
       }
 
       if (!includeMinutesAndSeconds) {
-        return `${duration.date} ${duration.hours} s`;
+        return `${duration.date}   ${duration.hours} s`;
       }
 
       return `${duration.date} ${duration.time}`;
