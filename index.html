@@ -290,6 +290,13 @@
       opacity: 0.8;
     }
 
+    .time-progress-detail-real {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      opacity: 0.9;
+    }
+
     label {
       display: block;
       margin: 16px 0 8px;
@@ -682,12 +689,20 @@
               id="elapsedDuration"
               class="time-progress-detail"
             >-</span>
+            <span
+              id="elapsedRealDuration"
+              class="time-progress-detail-real"
+            >-</span>
           </div>
           <div class="time-progress-stat">
             <span id="remainingPercent">Kalan: - %</span>
             <span
               id="remainingDuration"
               class="time-progress-detail"
+            >-</span>
+            <span
+              id="remainingRealDuration"
+              class="time-progress-detail-real"
             >-</span>
           </div>
         </div>
@@ -1381,6 +1396,36 @@ time_end=${endTime}`;
       return `${duration.date} ${duration.time}`;
     }
 
+    function getWeekendExcludedDurationMs(start, end) {
+      const startDate = new Date(start);
+      const endDate = new Date(end);
+
+      if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime()) || endDate <= startDate) {
+        return 0;
+      }
+
+      let totalMs = 0;
+      let cursor = new Date(startDate);
+
+      while (cursor < endDate) {
+        const segmentEnd = new Date(cursor);
+        segmentEnd.setHours(24, 0, 0, 0);
+
+        if (segmentEnd > endDate) {
+          segmentEnd.setTime(endDate.getTime());
+        }
+
+        const isWeekend = cursor.getDay() === 0 || cursor.getDay() === 6;
+        if (!isWeekend) {
+          totalMs += segmentEnd - cursor;
+        }
+
+        cursor = segmentEnd;
+      }
+
+      return totalMs;
+    }
+
     function updateLiveClock() {
       const now = new Date();
       document.getElementById("liveClock").textContent = now.toLocaleTimeString("tr-TR", {
@@ -1468,8 +1513,10 @@ time_end=${endTime}`;
         document.getElementById("viewEndTime").textContent = "-";
         document.getElementById("elapsedPercent").textContent = "Geçen: - %";
         document.getElementById("elapsedDuration").textContent = "-";
+        document.getElementById("elapsedRealDuration").textContent = "-";
         document.getElementById("remainingPercent").textContent = "Kalan: - %";
         document.getElementById("remainingDuration").textContent = "-";
+        document.getElementById("remainingRealDuration").textContent = "-";
         document.getElementById("timeProgressFill").style.width = "0%";
         document.getElementById("nextInfo").textContent = "-";
         statusText.textContent = "Kurulum bekleniyor";
@@ -1499,12 +1546,16 @@ time_end=${endTime}`;
       document.getElementById("nextSirenAt").textContent = nextSiren ? formatSirenDateTime(nextSiren) : "Yok";
       const elapsedProgress = 100 - timeProgress;
       const elapsedDurationMs = Math.max(0, now - projectStart);
+      const elapsedRealDurationMs = getWeekendExcludedDurationMs(projectStart, now);
+      const remainingRealDurationMs = getWeekendExcludedDurationMs(now, deadline);
       document.getElementById("viewStartTime").textContent = projectStart.toLocaleString("tr-TR");
       document.getElementById("viewEndTime").textContent = deadline.toLocaleString("tr-TR");
       document.getElementById("elapsedPercent").textContent = `Geçen: %${Math.round(elapsedProgress)}`;
       document.getElementById("elapsedDuration").textContent = formatDurationText(elapsedDurationMs);
+      document.getElementById("elapsedRealDuration").textContent = formatDurationText(elapsedRealDurationMs);
       document.getElementById("remainingPercent").textContent = `Kalan: %${Math.round(timeProgress)}`;
       document.getElementById("remainingDuration").textContent = formatDurationText(diffMs, "Süre doldu");
+      document.getElementById("remainingRealDuration").textContent = formatDurationText(remainingRealDurationMs, "Süre doldu");
       document.getElementById("timeProgressFill").style.width = `${elapsedProgress.toFixed(2)}%`;
       const remaining = formatRemaining(diffMs);
       document.getElementById("remainingDate").textContent = remaining.date;
