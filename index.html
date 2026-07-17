@@ -711,7 +711,6 @@
       </div>
 
       <div class="info-list">
-        <div class="info"><span>Proje</span><span id="viewTitle">-</span></div>
         <hr />
         <div class="info"><span>Sıradaki siren</span><span id="nextSirenAt">-</span></div>
         <div class="info"><span>Sabit sirenler</span><span>10:00 / 14:00 / 17:00</span></div>
@@ -1519,7 +1518,6 @@ time_end=${endTime}`;
 
       if (!project) {
         document.getElementById("mainTitle").textContent = "Proje alarmı";
-        document.getElementById("viewTitle").textContent = "-";
         document.getElementById("nextSirenAt").textContent = "-";
         document.getElementById("remainingDate").textContent = "-";
         document.getElementById("remainingTime").textContent = "-";
@@ -1554,7 +1552,6 @@ time_end=${endTime}`;
       const nextSiren = getNextSirenDate(project, now);
 
       document.getElementById("mainTitle").textContent = project.title;
-      document.getElementById("viewTitle").textContent = project.title;
       document.getElementById("nextSirenAt").textContent = nextSiren ? formatSirenDateTime(nextSiren) : "Yok";
       const elapsedProgress = 100 - timeProgress;
       const elapsedDurationMs = Math.max(0, now - projectStart);
