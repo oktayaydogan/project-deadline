@@ -1346,7 +1346,13 @@ time_end=${endTime}`;
     }
 
     function formatRemaining(ms) {
-      if (ms <= 0) return { date: "Süre doldu", time: "" };
+      if (ms <= 0) return {
+        date: "Süre doldu",
+        hours: 0,
+        minutes: 0,
+        seconds: 0,
+        time: ""
+      };
 
       const totalSeconds = Math.floor(ms / 1000);
       let remainingSeconds = totalSeconds;
@@ -1382,15 +1388,23 @@ time_end=${endTime}`;
 
       return {
         date: dateText,
+        hours,
+        minutes,
+        seconds,
         time: `${hours} s ${minutes} dk ${seconds} sn`
       };
     }
 
-    function formatDurationText(ms, fallback = "0 s 0 dk 0 sn") {
+    function formatDurationText(ms, fallback = "0 s 0 dk 0 sn", options = {}) {
       const duration = formatRemaining(ms);
+      const includeMinutesAndSeconds = options.includeMinutesAndSeconds !== false;
 
       if (!duration.time) {
         return duration.date || fallback;
+      }
+
+      if (!includeMinutesAndSeconds) {
+        return `${duration.date} ${duration.hours} s`;
       }
 
       return `${duration.date} ${duration.time}`;
@@ -1551,11 +1565,19 @@ time_end=${endTime}`;
       document.getElementById("viewStartTime").textContent = projectStart.toLocaleString("tr-TR");
       document.getElementById("viewEndTime").textContent = deadline.toLocaleString("tr-TR");
       document.getElementById("elapsedPercent").textContent = `Geçen: %${Math.round(elapsedProgress)}`;
-      document.getElementById("elapsedDuration").textContent = formatDurationText(elapsedDurationMs);
-      document.getElementById("elapsedRealDuration").textContent = formatDurationText(elapsedRealDurationMs);
+      document.getElementById("elapsedDuration").textContent = formatDurationText(elapsedDurationMs, "0 s", {
+        includeMinutesAndSeconds: false
+      });
+      document.getElementById("elapsedRealDuration").textContent = formatDurationText(elapsedRealDurationMs, "0 s", {
+        includeMinutesAndSeconds: false
+      });
       document.getElementById("remainingPercent").textContent = `Kalan: %${Math.round(timeProgress)}`;
-      document.getElementById("remainingDuration").textContent = formatDurationText(diffMs, "Süre doldu");
-      document.getElementById("remainingRealDuration").textContent = formatDurationText(remainingRealDurationMs, "Süre doldu");
+      document.getElementById("remainingDuration").textContent = formatDurationText(diffMs, "Süre doldu", {
+        includeMinutesAndSeconds: false
+      });
+      document.getElementById("remainingRealDuration").textContent = formatDurationText(remainingRealDurationMs, "Süre doldu", {
+        includeMinutesAndSeconds: false
+      });
       document.getElementById("timeProgressFill").style.width = `${elapsedProgress.toFixed(2)}%`;
       const remaining = formatRemaining(diffMs);
       document.getElementById("remainingDate").textContent = remaining.date;
