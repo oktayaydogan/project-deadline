@@ -264,6 +264,17 @@
       z-index: 1;
     }
 
+    .month-end-marker {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 0px;
+      background: hsl(0deg 0% 0% / 25%);
+      pointer-events: none;
+      z-index: 2;
+      border-right: 2px dotted hsl(0deg 0% 0% / 50%);
+    }
+
     .time-progress-labels {
       margin-top: 10px;
       display: flex;
@@ -692,6 +703,7 @@
             class="time-progress-fill"
           ></div>
           <div id="weekendMarkers"></div>
+          <div id="monthEndMarkers"></div>
         </div>
         <div class="time-progress-labels">
           <div class="time-progress-stat">
@@ -1517,6 +1529,49 @@ time_end=${endTime}`;
       return weekendBlocks;
     }
 
+    function getMonthEndPositions(startDate, endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+
+      if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) {
+        return [];
+      }
+
+      const totalDuration = end - start;
+      const monthEndPositions = [];
+      const cursor = new Date(start);
+      cursor.setHours(0, 0, 0, 0);
+
+      // Move to first month end
+      const firstMonthEnd = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0, 23, 59, 59, 999);
+
+      if (firstMonthEnd > start && firstMonthEnd < end) {
+        const leftPercent = ((firstMonthEnd - start) / totalDuration) * 100;
+        monthEndPositions.push({ left: leftPercent });
+      }
+
+      // Find all subsequent month ends
+      cursor.setMonth(cursor.getMonth() + 1);
+      while (cursor <= end) {
+        const monthEnd = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0, 23, 59, 59, 999);
+        
+        if (monthEnd >= end) {
+          break;
+        }
+        
+        if (monthEnd > start) {
+          const leftPercent = ((monthEnd - start) / totalDuration) * 100;
+          if (leftPercent >= 0 && leftPercent <= 100) {
+            monthEndPositions.push({ left: leftPercent });
+          }
+        }
+        
+        cursor.setMonth(cursor.getMonth() + 1);
+      }
+
+      return monthEndPositions;
+    }
+
     function updateWeekendMarkers(projectStart, deadline) {
       const weekendBlocks = getWeekendPositions(projectStart, deadline);
       const weekendMarkersContainer = document.getElementById("weekendMarkers");
@@ -1532,6 +1587,20 @@ time_end=${endTime}`;
       });
       
       cachedWeekendMarkers = { projectStart, deadline };
+    }
+
+    function updateMonthEndMarkers(projectStart, deadline) {
+      const monthEndPositions = getMonthEndPositions(projectStart, deadline);
+      const monthEndMarkersContainer = document.getElementById("monthEndMarkers");
+      if (!monthEndMarkersContainer) return;
+      
+      monthEndMarkersContainer.innerHTML = "";
+      monthEndPositions.forEach(position => {
+        const marker = document.createElement("div");
+        marker.className = "month-end-marker";
+        marker.style.left = `${position.left.toFixed(2)}%`;
+        monthEndMarkersContainer.appendChild(marker);
+      });
     }
 
     function updateLiveClock() {
@@ -1674,6 +1743,7 @@ time_end=${endTime}`;
           cachedWeekendMarkers.projectStart.getTime() !== projectStart.getTime() || 
           cachedWeekendMarkers.deadline.getTime() !== deadline.getTime()) {
         updateWeekendMarkers(projectStart, deadline);
+        updateMonthEndMarkers(projectStart, deadline);
       }
       const remaining = formatRemaining(diffMs);
       document.getElementById("remainingDate").textContent = remaining.date;
