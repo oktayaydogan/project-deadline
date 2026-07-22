@@ -244,6 +244,7 @@
       background-clip: padding-box;
       overflow: hidden;
       border: 1px solid hsl(0deg 0% 100% / 30%);
+      position: relative;
     }
 
     .time-progress-fill {
@@ -252,6 +253,15 @@
       border-radius: 999px 0 0 999px;
       background: rgb(255 54 84 / 70%);
       transition: width .35s ease;
+    }
+
+    .weekend-marker {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      background: rgb(100 0 0 / 20%);
+      pointer-events: none;
+      z-index: 1;
     }
 
     .time-progress-labels {
@@ -681,6 +691,7 @@
             id="timeProgressFill"
             class="time-progress-fill"
           ></div>
+          <div id="weekendMarkers"></div>
         </div>
         <div class="time-progress-labels">
           <div class="time-progress-stat">
@@ -827,6 +838,8 @@
     const STORAGE_KEY = "deadline_siren_project";
     const LAST_RING_KEY = "deadline_siren_last_ring_at";
     const LAST_MINUTE_KEY = "deadline_siren_last_minute";
+
+    let cachedWeekendMarkers = null;
 
     const FIXED_SIREN_TIMES = ["10:00", "14:00", "17:00"];
     const FIXED_PUBLIC_HOLIDAYS_MMDD = new Set([
@@ -1019,6 +1032,7 @@ time_end=${endTime}`;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(project));
       showToast("Proje kaydedildi.");
       toggleSettings();
+      cachedWeekendMarkers = null;
       render();
     }
 
@@ -1042,6 +1056,7 @@ time_end=${endTime}`;
 
       showToast("Proje sıfırlandı.");
       toggleSettings();
+      cachedWeekendMarkers = null;
       render();
     }
 
@@ -1437,6 +1452,88 @@ time_end=${endTime}`;
       return totalMs;
     }
 
+    function getWeekendPositions(startDate, endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+
+      if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) {
+        return [];
+      }
+
+      const totalDuration = end - start;
+      const weekendBlocks = [];
+      const cursor = new Date(start);
+      cursor.setHours(0, 0, 0, 0);
+
+      let weekendStart = null;
+
+      while (cursor <= end) {
+        const dayOfWeek = cursor.getDay();
+        const isWeekendDay = dayOfWeek === 6 || dayOfWeek === 0;
+        
+        if (isWeekendDay && !weekendStart) {
+          // Start of a weekend period
+          weekendStart = new Date(cursor);
+        } else if (!isWeekendDay && weekendStart) {
+          // End of a weekend period
+          const weekendEnd = new Date(cursor);
+          
+          // Clamp to project boundaries
+          const blockStart = weekendStart < start ? start : weekendStart;
+          const blockEnd = weekendEnd > end ? end : weekendEnd;
+          
+          if (blockStart < blockEnd) {
+            const leftPercent = ((blockStart - start) / totalDuration) * 100;
+            const rightPercent = ((blockEnd - start) / totalDuration) * 100;
+            const widthPercent = rightPercent - leftPercent;
+            
+            if (leftPercent >= 0 && leftPercent <= 100) {
+              weekendBlocks.push({ left: leftPercent, width: widthPercent });
+            }
+          }
+          
+          weekendStart = null;
+        }
+
+        cursor.setDate(cursor.getDate() + 1);
+      }
+      
+      // Handle weekend that extends to the end
+      if (weekendStart) {
+        const blockStart = weekendStart < start ? start : weekendStart;
+        const blockEnd = end;
+        
+        if (blockStart < blockEnd) {
+          const leftPercent = ((blockStart - start) / totalDuration) * 100;
+          const rightPercent = ((blockEnd - start) / totalDuration) * 100;
+          const widthPercent = rightPercent - leftPercent;
+          
+          if (leftPercent >= 0 && leftPercent <= 100) {
+            weekendBlocks.push({ left: leftPercent, width: widthPercent });
+          }
+        }
+      }
+
+      return weekendBlocks;
+    }
+
+    function updateWeekendMarkers(projectStart, deadline) {
+      const weekendBlocks = getWeekendPositions(projectStart, deadline);
+      const weekendMarkersContainer = document.getElementById("weekendMarkers");
+      if (!weekendMarkersContainer) return;
+      
+      weekendMarkersContainer.innerHTML = "";
+      weekendBlocks.forEach(block => {
+        const marker = document.createElement("div");
+        marker.className = "weekend-marker";
+        marker.style.left = `${block.left.toFixed(2)}%`;
+        marker.style.width = `${block.width.toFixed(2)}%`;
+        weekendMarkersContainer.appendChild(marker);
+      });
+      
+      cachedWeekendMarkers = { projectStart, deadline };
+    }
+
     function updateLiveClock() {
       const now = new Date();
       document.getElementById("liveClock").textContent = now.toLocaleTimeString("tr-TR", {
@@ -1571,6 +1668,13 @@ time_end=${endTime}`;
         includeMinutesAndSeconds: false
       });
       document.getElementById("timeProgressFill").style.width = `${elapsedProgress.toFixed(2)}%`;
+      
+      // Update weekend markers only if dates changed
+      if (!cachedWeekendMarkers || 
+          cachedWeekendMarkers.projectStart.getTime() !== projectStart.getTime() || 
+          cachedWeekendMarkers.deadline.getTime() !== deadline.getTime()) {
+        updateWeekendMarkers(projectStart, deadline);
+      }
       const remaining = formatRemaining(diffMs);
       document.getElementById("remainingDate").textContent = remaining.date;
       document.getElementById("remainingTime").textContent = remaining.time;
