@@ -238,21 +238,38 @@
 
     .time-progress-track {
       width: 100%;
-      height: 15px;
-      border-radius: 999px;
-      background: rgb(0 255 162 / 50%);
-      background-clip: padding-box;
-      overflow: hidden;
-      border: 1px solid hsl(0deg 0% 100% / 30%);
-      position: relative;
+      display: flex;
+      gap: 2px;
+      align-items: stretch;
     }
 
-    .time-progress-fill {
+    .month-bar {
+      height: 15px;
+      border-radius: 2px;
+      background: rgb(0 255 162 / 50%);
+      background-clip: padding-box;
+      border: 1px solid hsl(0deg 0% 100% / 30%);
+      position: relative;
+      overflow: hidden;
+      min-width: 10px;
+    }
+
+    .month-bar.first {
+      border-top-left-radius: 12px;
+      border-bottom-left-radius: 12px;
+    }
+
+    .month-bar.last {
+      border-top-right-radius: 12px;
+      border-bottom-right-radius: 12px;
+    }
+
+    .month-bar-fill {
       width: 0%;
       height: 100%;
-      border-radius: 999px 0 0 999px;
       background: rgb(255 54 84 / 70%);
       transition: width .35s ease;
+      position: relative;
     }
 
     .weekend-marker {
@@ -262,17 +279,6 @@
       background: rgb(100 0 0 / 20%);
       pointer-events: none;
       z-index: 1;
-    }
-
-    .month-end-marker {
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      width: 0px;
-      background: hsl(0deg 0% 0% / 25%);
-      pointer-events: none;
-      z-index: 2;
-      border-right: 2px dotted hsl(0deg 0% 0% / 50%);
     }
 
     .time-progress-labels {
@@ -697,13 +703,8 @@
           <span id="viewStartTime">--/--/----</span>
           <span id="viewEndTime">--/--/----</span>
         </div>
-        <div class="time-progress-track">
-          <div
-            id="timeProgressFill"
-            class="time-progress-fill"
-          ></div>
-          <div id="weekendMarkers"></div>
-          <div id="monthEndMarkers"></div>
+        <div class="time-progress-track" id="timeProgressTrack">
+          <!-- Monthly bars will be generated here -->
         </div>
         <div class="time-progress-labels">
           <div class="time-progress-stat">
@@ -1529,7 +1530,7 @@ time_end=${endTime}`;
       return weekendBlocks;
     }
 
-    function getMonthEndPositions(startDate, endDate) {
+    function getMonthlyBars(startDate, endDate) {
       const start = new Date(startDate);
       const end = new Date(endDate);
 
@@ -1537,70 +1538,82 @@ time_end=${endTime}`;
         return [];
       }
 
-      const totalDuration = end - start;
-      const monthEndPositions = [];
-      const cursor = new Date(start);
-      cursor.setHours(0, 0, 0, 0);
+      const bars = [];
+      let cursor = new Date(start);
 
-      // Move to first month end
-      const firstMonthEnd = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0, 23, 59, 59, 999);
-
-      if (firstMonthEnd > start && firstMonthEnd < end) {
-        const leftPercent = ((firstMonthEnd - start) / totalDuration) * 100;
-        monthEndPositions.push({ left: leftPercent });
-      }
-
-      // Find all subsequent month ends
-      cursor.setMonth(cursor.getMonth() + 1);
-      while (cursor <= end) {
+      while (cursor < end) {
+        // Calculate month boundaries
+        const monthStart = new Date(cursor);
         const monthEnd = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0, 23, 59, 59, 999);
         
-        if (monthEnd >= end) {
-          break;
-        }
+        // Clamp to project boundaries
+        const barStart = monthStart < start ? start : monthStart;
+        const barEnd = monthEnd > end ? end : monthEnd;
         
-        if (monthEnd > start) {
-          const leftPercent = ((monthEnd - start) / totalDuration) * 100;
-          if (leftPercent >= 0 && leftPercent <= 100) {
-            monthEndPositions.push({ left: leftPercent });
-          }
-        }
+        // Calculate duration for this month segment
+        const monthDuration = barEnd - barStart;
         
+        // Get weekend blocks for this month
+        const weekendBlocks = getWeekendPositions(barStart, barEnd);
+        
+        bars.push({
+          start: barStart,
+          end: barEnd,
+          duration: monthDuration,
+          weekendBlocks: weekendBlocks
+        });
+        
+        // Move to next month
         cursor.setMonth(cursor.getMonth() + 1);
+        cursor.setDate(1);
+        cursor.setHours(0, 0, 0, 0);
       }
 
-      return monthEndPositions;
+      return bars;
     }
 
-    function updateWeekendMarkers(projectStart, deadline) {
-      const weekendBlocks = getWeekendPositions(projectStart, deadline);
-      const weekendMarkersContainer = document.getElementById("weekendMarkers");
-      if (!weekendMarkersContainer) return;
+    function updateMonthlyProgressBars(projectStart, deadline, now) {
+      const trackContainer = document.getElementById("timeProgressTrack");
+      if (!trackContainer) return;
       
-      weekendMarkersContainer.innerHTML = "";
-      weekendBlocks.forEach(block => {
-        const marker = document.createElement("div");
-        marker.className = "weekend-marker";
-        marker.style.left = `${block.left.toFixed(2)}%`;
-        marker.style.width = `${block.width.toFixed(2)}%`;
-        weekendMarkersContainer.appendChild(marker);
+      const monthlyBars = getMonthlyBars(projectStart, deadline);
+      const totalProjectDuration = deadline - projectStart;
+      trackContainer.innerHTML = "";
+      
+      monthlyBars.forEach((bar, index) => {
+        const monthBar = document.createElement("div");
+        monthBar.className = "month-bar";
+        
+        // Add first/last classes for special border radius
+        if (index === 0) monthBar.classList.add("first");
+        if (index === monthlyBars.length - 1) monthBar.classList.add("last");
+        
+        // Set flex-grow proportional to this month's duration
+        const flexGrow = bar.duration / totalProjectDuration;
+        monthBar.style.flexGrow = flexGrow.toString();
+        
+        // Calculate progress for this month
+        const monthProgress = now < bar.start ? 0 : now > bar.end ? 100 : ((now - bar.start) / bar.duration) * 100;
+        
+        // Create fill element
+        const fill = document.createElement("div");
+        fill.className = "month-bar-fill";
+        fill.style.width = `${monthProgress.toFixed(2)}%`;
+        monthBar.appendChild(fill);
+        
+        // Add weekend markers for this month
+        bar.weekendBlocks.forEach(block => {
+          const marker = document.createElement("div");
+          marker.className = "weekend-marker";
+          marker.style.left = `${block.left.toFixed(2)}%`;
+          marker.style.width = `${block.width.toFixed(2)}%`;
+          monthBar.appendChild(marker);
+        });
+        
+        trackContainer.appendChild(monthBar);
       });
       
       cachedWeekendMarkers = { projectStart, deadline };
-    }
-
-    function updateMonthEndMarkers(projectStart, deadline) {
-      const monthEndPositions = getMonthEndPositions(projectStart, deadline);
-      const monthEndMarkersContainer = document.getElementById("monthEndMarkers");
-      if (!monthEndMarkersContainer) return;
-      
-      monthEndMarkersContainer.innerHTML = "";
-      monthEndPositions.forEach(position => {
-        const marker = document.createElement("div");
-        marker.className = "month-end-marker";
-        marker.style.left = `${position.left.toFixed(2)}%`;
-        monthEndMarkersContainer.appendChild(marker);
-      });
     }
 
     function updateLiveClock() {
@@ -1692,7 +1705,7 @@ time_end=${endTime}`;
         document.getElementById("remainingPercent").textContent = "Kalan: - %";
         document.getElementById("remainingDuration").textContent = "-";
         document.getElementById("remainingRealDuration").textContent = "-";
-        document.getElementById("timeProgressFill").style.width = "0%";
+        document.getElementById("timeProgressTrack").innerHTML = "";
         document.getElementById("nextInfo").textContent = "-";
         statusText.textContent = "Kurulum bekleniyor";
         statusDot.classList.add("inactive");
@@ -1736,14 +1749,28 @@ time_end=${endTime}`;
       document.getElementById("remainingRealDuration").textContent = formatDurationText(remainingRealDurationMs, "Süre doldu", {
         includeMinutesAndSeconds: false
       });
-      document.getElementById("timeProgressFill").style.width = `${elapsedProgress.toFixed(2)}%`;
       
-      // Update weekend markers only if dates changed
+      // Update monthly progress bars (structure when dates change, fill always)
       if (!cachedWeekendMarkers || 
           cachedWeekendMarkers.projectStart.getTime() !== projectStart.getTime() || 
           cachedWeekendMarkers.deadline.getTime() !== deadline.getTime()) {
-        updateWeekendMarkers(projectStart, deadline);
-        updateMonthEndMarkers(projectStart, deadline);
+        updateMonthlyProgressBars(projectStart, deadline, now);
+      } else {
+        // Just update the fill widths without recreating the bars
+        const trackContainer = document.getElementById("timeProgressTrack");
+        if (trackContainer) {
+          const monthlyBars = getMonthlyBars(projectStart, deadline);
+          const monthBarElements = trackContainer.querySelectorAll(".month-bar");
+          monthlyBars.forEach((bar, index) => {
+            if (monthBarElements[index]) {
+              const fill = monthBarElements[index].querySelector(".month-bar-fill");
+              if (fill) {
+                const monthProgress = now < bar.start ? 0 : now > bar.end ? 100 : ((now - bar.start) / bar.duration) * 100;
+                fill.style.width = `${monthProgress.toFixed(2)}%`;
+              }
+            }
+          });
+        }
       }
       const remaining = formatRemaining(diffMs);
       document.getElementById("remainingDate").textContent = remaining.date;
