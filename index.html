@@ -30,10 +30,15 @@
       min-height: 100vh;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: var(--text);
-      background:
+      background-color: var(--bg);
+      background-image:
         radial-gradient(circle at top left, rgba(56, 189, 248, .24), transparent 35%),
         radial-gradient(circle at bottom right, rgba(251, 113, 133, .18), transparent 35%),
-        var(--bg);
+        url('tahoe-day.jpg');
+      background-position: center;
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -42,7 +47,7 @@
 
     .app {
       width: 100%;
-      max-width: 760px;
+      width: min(640px, 80%);
       position: relative;
     }
 
