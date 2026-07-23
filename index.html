@@ -35,10 +35,11 @@
         radial-gradient(circle at top left, rgba(56, 189, 248, .24), transparent 35%),
         radial-gradient(circle at bottom right, rgba(251, 113, 133, .18), transparent 35%),
         url('tahoe-day.jpg');
-      background-position: center;
+      background-position: 50% 50%;
       background-size: cover;
       background-repeat: no-repeat;
       background-attachment: fixed;
+      animation: backgroundDrift 180s linear infinite alternate;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -638,6 +639,16 @@
 
       100% {
         box-shadow: 0 0 0 0 rgba(52, 211, 153, 0);
+      }
+    }
+
+    @keyframes backgroundDrift {
+      0% {
+        background-position: 0% 50%;
+      }
+
+      100% {
+        background-position: 100% 50%;
       }
     }
 
