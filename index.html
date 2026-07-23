@@ -117,6 +117,49 @@
       margin-bottom: 24px;
     }
 
+    .fullscreen-icon-btn {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      width: 44px;
+      height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, .14);
+      color: rgba(248, 250, 252, .8);
+      background: rgba(2, 6, 23, .36);
+      -webkit-backdrop-filter: blur(6px);
+      backdrop-filter: blur(6px);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, .25);
+      opacity: .72;
+      z-index: 160;
+    }
+
+    .fullscreen-icon-btn:hover {
+      opacity: .95;
+      border-color: rgba(255, 255, 255, .24);
+      background: rgba(2, 6, 23, .5);
+      transform: none;
+    }
+
+    .fullscreen-icon-btn:active {
+      opacity: .9;
+      transform: none;
+    }
+
+    .fullscreen-icon {
+      width: 20px;
+      height: 20px;
+      stroke: currentColor;
+      stroke-width: 2.4;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      pointer-events: none;
+    }
+
     .badge {
       display: inline-flex;
       align-items: center;
@@ -823,6 +866,21 @@
   </video>
   <div class="gradient-overlay"></div>
 
+  <button
+    id="fullscreenToggle"
+    class="fullscreen-icon-btn"
+    onclick="toggleFullscreen()"
+    title="Tam ekrana geç"
+    aria-label="Tam ekrana geç"
+  >
+    <svg class="fullscreen-icon" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M9 3H4v5"></path>
+      <path d="M15 3h5v5"></path>
+      <path d="M9 21H4v-5"></path>
+      <path d="M15 21h5v-5"></path>
+    </svg>
+  </button>
+
   <div class="bg-toggle">
     <span class="bg-toggle-label">Image</span>
     <div id="bgToggleSwitch" class="bg-toggle-switch" onclick="toggleBackground()">
@@ -1053,6 +1111,36 @@
     const LAST_RING_KEY = "deadline_siren_last_ring_at";
     const LAST_MINUTE_KEY = "deadline_siren_last_minute";
     const BG_MODE_KEY = "deadline_siren_bg_mode";
+
+    function updateFullscreenButton() {
+      const button = document.getElementById("fullscreenToggle");
+      if (!button) return;
+
+      const isFullscreen = Boolean(document.fullscreenElement);
+      button.title = isFullscreen ? "Tam ekrandan çık" : "Tam ekrana geç";
+      button.setAttribute("aria-label", button.title);
+
+      button.innerHTML = isFullscreen
+        ? '<svg class="fullscreen-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3v5H3"></path><path d="M16 3v5h5"></path><path d="M8 21v-5H3"></path><path d="M16 21v-5h5"></path></svg>'
+        : '<svg class="fullscreen-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H4v5"></path><path d="M15 3h5v5"></path><path d="M9 21H4v-5"></path><path d="M15 21h5v-5"></path></svg>';
+    }
+
+    async function toggleFullscreen() {
+      if (!document.fullscreenEnabled) {
+        showToast("Tarayıcı tam ekranı desteklemiyor.");
+        return;
+      }
+
+      try {
+        if (document.fullscreenElement) {
+          await document.exitFullscreen();
+        } else {
+          await document.documentElement.requestFullscreen();
+        }
+      } catch {
+        showToast("Tam ekran değiştirilemedi.");
+      }
+    }
 
     function toggleBackground() {
       const videoElement = document.getElementById("videoBackground");
@@ -2052,10 +2140,13 @@ time_end=${endTime}`;
     }
 
     initializeBackground();
+    updateFullscreenButton();
     startLiveClock();
     startUpdateWatcher();
     render();
     setInterval(render, 1000);
+
+    document.addEventListener("fullscreenchange", updateFullscreenButton);
 
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape") {
