@@ -31,19 +31,39 @@
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: var(--text);
       background-color: var(--bg);
-      background-image:
-        radial-gradient(circle at top left, rgba(56, 189, 248, .24), transparent 35%),
-        radial-gradient(circle at bottom right, rgba(251, 113, 133, .18), transparent 35%),
-        url('tahoe-day.jpg');
-      background-position: 50% 50%;
-      background-size: cover;
-      background-repeat: no-repeat;
-      background-attachment: fixed;
-      animation: backgroundDrift 180s linear infinite alternate;
       display: flex;
       align-items: center;
       justify-content: center;
       padding: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .video-background {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      min-width: 100%;
+      min-height: 100%;
+      width: auto;
+      height: auto;
+      transform: translate(-50%, -50%);
+      z-index: -2;
+      object-fit: cover;
+      animation: videoDrift 480s linear infinite alternate;
+    }
+
+    .gradient-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      pointer-events: none;
+      background-image:
+        radial-gradient(circle at top left, rgba(56, 189, 248, .24), transparent 35%),
+        radial-gradient(circle at bottom right, rgba(251, 113, 133, .18), transparent 35%);
     }
 
     .app {
@@ -652,6 +672,16 @@
       }
     }
 
+    @keyframes videoDrift {
+      0% {
+        transform: translate(-50%, -50%) scale(1.2) translateX(-5%);
+      }
+
+      100% {
+        transform: translate(-50%, -50%) scale(1.2) translateX(5%);
+      }
+    }
+
     @media (max-width: 640px) {
       body {
         padding: 14px;
@@ -674,6 +704,10 @@
 </head>
 
 <body>
+  <video class="video-background" autoplay loop muted playsinline>
+    <source src="tahoe-day-40.webm" type="video/webm">
+  </video>
+  <div class="gradient-overlay"></div>
   <main class="app">
     <div class="clock-stage">
       <div
