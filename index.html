@@ -12,7 +12,7 @@
   <style>
     :root {
       --bg: #0f172a;
-      --card: rgba(17, 24, 39, .86);
+      --card: rgba(17, 24, 39, .5);
       --text: #f8fafc;
       --muted: #94a3b8;
       --primary: #38bdf8;
@@ -32,14 +32,13 @@
       color: var(--text);
       background-color: var(--bg);
       background-image:
-        radial-gradient(circle at top left, rgba(56, 189, 248, .3), transparent 35%),
-        radial-gradient(circle at bottom right, rgba(251, 113, 133, .24), transparent 35%),
+        radial-gradient(circle at top left, rgba(56, 189, 248, .24), transparent 35%),
+        radial-gradient(circle at bottom right, rgba(251, 113, 133, .18), transparent 35%),
         url('tahoe-day.jpg');
-      background-position: 50% 50%;
+      background-position: center;
       background-size: cover;
       background-repeat: no-repeat;
       background-attachment: fixed;
-      animation: backgroundDrift 180s linear infinite alternate;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -58,8 +57,8 @@
       border-radius: 28px;
       padding: 28px;
       box-shadow: 0 24px 80px rgba(0, 0, 0, .35);
-      -webkit-backdrop-filter: blur(18px);
-      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(15px);
+      backdrop-filter: blur(15px);
     }
 
     .topbar {
@@ -318,15 +317,15 @@
       align-items: flex-end;
     }
 
-    .time-progress-labels .time-progress-stat:first-child > span:first-child {
+    .time-progress-labels .time-progress-stat:first-child>span:first-child {
       color: var(--danger);
     }
 
-    .time-progress-labels .time-progress-stat.center > span:first-child {
+    .time-progress-labels .time-progress-stat.center>span:first-child {
       color: var(--muted);
     }
 
-    .time-progress-labels .time-progress-stat:last-child > span:first-child {
+    .time-progress-labels .time-progress-stat:last-child>span:first-child {
       color: var(--success);
     }
 
@@ -642,16 +641,6 @@
       }
     }
 
-    @keyframes backgroundDrift {
-      0% {
-        background-position: 0% 50%;
-      }
-
-      100% {
-        background-position: 100% 50%;
-      }
-    }
-
     @media (max-width: 640px) {
       body {
         padding: 14px;
@@ -734,7 +723,10 @@
           <span id="viewStartTime">--/--/----</span>
           <span id="viewEndTime">--/--/----</span>
         </div>
-        <div class="time-progress-track" id="timeProgressTrack">
+        <div
+          class="time-progress-track"
+          id="timeProgressTrack"
+        >
           <!-- Monthly bars will be generated here -->
         </div>
         <div class="time-progress-labels">
@@ -1525,44 +1517,44 @@ time_end=${endTime}`;
       while (cursor <= end) {
         const dayOfWeek = cursor.getDay();
         const isWeekendDay = dayOfWeek === 6 || dayOfWeek === 0;
-        
+
         if (isWeekendDay && !weekendStart) {
           // Start of a weekend period
           weekendStart = new Date(cursor);
         } else if (!isWeekendDay && weekendStart) {
           // End of a weekend period
           const weekendEnd = new Date(cursor);
-          
+
           // Clamp to project boundaries
           const blockStart = weekendStart < start ? start : weekendStart;
           const blockEnd = weekendEnd > end ? end : weekendEnd;
-          
+
           if (blockStart < blockEnd) {
             const leftPercent = ((blockStart - start) / totalDuration) * 100;
             const rightPercent = ((blockEnd - start) / totalDuration) * 100;
             const widthPercent = rightPercent - leftPercent;
-            
+
             if (leftPercent >= 0 && leftPercent <= 100) {
               weekendBlocks.push({ left: leftPercent, width: widthPercent });
             }
           }
-          
+
           weekendStart = null;
         }
 
         cursor.setDate(cursor.getDate() + 1);
       }
-      
+
       // Handle weekend that extends to the end
       if (weekendStart) {
         const blockStart = weekendStart < start ? start : weekendStart;
         const blockEnd = end;
-        
+
         if (blockStart < blockEnd) {
           const leftPercent = ((blockStart - start) / totalDuration) * 100;
           const rightPercent = ((blockEnd - start) / totalDuration) * 100;
           const widthPercent = rightPercent - leftPercent;
-          
+
           if (leftPercent >= 0 && leftPercent <= 100) {
             weekendBlocks.push({ left: leftPercent, width: widthPercent });
           }
@@ -1587,24 +1579,24 @@ time_end=${endTime}`;
         // Calculate month boundaries
         const monthStart = new Date(cursor);
         const monthEnd = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0, 23, 59, 59, 999);
-        
+
         // Clamp to project boundaries
         const barStart = monthStart < start ? start : monthStart;
         const barEnd = monthEnd > end ? end : monthEnd;
-        
+
         // Calculate duration for this month segment
         const monthDuration = barEnd - barStart;
-        
+
         // Get weekend blocks for this month
         const weekendBlocks = getWeekendPositions(barStart, barEnd);
-        
+
         bars.push({
           start: barStart,
           end: barEnd,
           duration: monthDuration,
           weekendBlocks: weekendBlocks
         });
-        
+
         // Move to next month
         cursor.setMonth(cursor.getMonth() + 1);
         cursor.setDate(1);
@@ -1617,32 +1609,32 @@ time_end=${endTime}`;
     function updateMonthlyProgressBars(projectStart, deadline, now) {
       const trackContainer = document.getElementById("timeProgressTrack");
       if (!trackContainer) return;
-      
+
       const monthlyBars = getMonthlyBars(projectStart, deadline);
       const totalProjectDuration = deadline - projectStart;
       trackContainer.innerHTML = "";
-      
+
       monthlyBars.forEach((bar, index) => {
         const monthBar = document.createElement("div");
         monthBar.className = "month-bar";
-        
+
         // Add first/last classes for special border radius
         if (index === 0) monthBar.classList.add("first");
         if (index === monthlyBars.length - 1) monthBar.classList.add("last");
-        
+
         // Set flex-grow proportional to this month's duration
         const flexGrow = bar.duration / totalProjectDuration;
         monthBar.style.flexGrow = flexGrow.toString();
-        
+
         // Calculate progress for this month
         const monthProgress = now < bar.start ? 0 : now > bar.end ? 100 : ((now - bar.start) / bar.duration) * 100;
-        
+
         // Create fill element
         const fill = document.createElement("div");
         fill.className = "month-bar-fill";
         fill.style.width = `${monthProgress.toFixed(2)}%`;
         monthBar.appendChild(fill);
-        
+
         // Add weekend markers for this month
         bar.weekendBlocks.forEach(block => {
           const marker = document.createElement("div");
@@ -1651,10 +1643,10 @@ time_end=${endTime}`;
           marker.style.width = `${block.width.toFixed(2)}%`;
           monthBar.appendChild(marker);
         });
-        
+
         trackContainer.appendChild(monthBar);
       });
-      
+
       cachedWeekendMarkers = { projectStart, deadline };
     }
 
@@ -1801,11 +1793,11 @@ time_end=${endTime}`;
       document.getElementById("totalRealDuration").textContent = formatDurationText(totalRealDurationMs, "0 s", {
         includeMinutesAndSeconds: false
       });
-      
+
       // Update monthly progress bars (structure when dates change, fill always)
-      if (!cachedWeekendMarkers || 
-          cachedWeekendMarkers.projectStart.getTime() !== projectStart.getTime() || 
-          cachedWeekendMarkers.deadline.getTime() !== deadline.getTime()) {
+      if (!cachedWeekendMarkers ||
+        cachedWeekendMarkers.projectStart.getTime() !== projectStart.getTime() ||
+        cachedWeekendMarkers.deadline.getTime() !== deadline.getTime()) {
         updateMonthlyProgressBars(projectStart, deadline, now);
       } else {
         // Just update the fill widths without recreating the bars
