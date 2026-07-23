@@ -296,6 +296,17 @@
       gap: 4px;
     }
 
+    .time-progress-stat:first-child {
+      text-align: left;
+      align-items: flex-start;
+    }
+
+    .time-progress-stat.center {
+      text-align: center;
+      align-items: center;
+      flex: 1;
+    }
+
     .time-progress-stat:last-child {
       text-align: right;
       align-items: flex-end;
@@ -303,6 +314,10 @@
 
     .time-progress-labels .time-progress-stat:first-child > span:first-child {
       color: var(--danger);
+    }
+
+    .time-progress-labels .time-progress-stat.center > span:first-child {
+      color: var(--muted);
     }
 
     .time-progress-labels .time-progress-stat:last-child > span:first-child {
@@ -715,6 +730,17 @@
             >-</span>
             <span
               id="elapsedRealDuration"
+              class="time-progress-detail-real"
+            >-</span>
+          </div>
+          <div class="time-progress-stat center">
+            <span id="totalDurationLabel">Toplam</span>
+            <span
+              id="totalDuration"
+              class="time-progress-detail"
+            >-</span>
+            <span
+              id="totalRealDuration"
               class="time-progress-detail-real"
             >-</span>
           </div>
@@ -1705,6 +1731,8 @@ time_end=${endTime}`;
         document.getElementById("remainingPercent").textContent = "Kalan: - %";
         document.getElementById("remainingDuration").textContent = "-";
         document.getElementById("remainingRealDuration").textContent = "-";
+        document.getElementById("totalDuration").textContent = "-";
+        document.getElementById("totalRealDuration").textContent = "-";
         document.getElementById("timeProgressTrack").innerHTML = "";
         document.getElementById("nextInfo").textContent = "-";
         statusText.textContent = "Kurulum bekleniyor";
@@ -1733,6 +1761,8 @@ time_end=${endTime}`;
       const elapsedDurationMs = Math.max(0, now - projectStart);
       const elapsedRealDurationMs = getWeekendExcludedDurationMs(projectStart, now);
       const remainingRealDurationMs = getWeekendExcludedDurationMs(now, deadline);
+      const totalDurationMs = deadline - projectStart;
+      const totalRealDurationMs = getWeekendExcludedDurationMs(projectStart, deadline);
       document.getElementById("viewStartTime").textContent = projectStart.toLocaleString("tr-TR");
       document.getElementById("viewEndTime").textContent = deadline.toLocaleString("tr-TR");
       document.getElementById("elapsedPercent").textContent = `Geçen: %${Math.round(elapsedProgress)}`;
@@ -1747,6 +1777,12 @@ time_end=${endTime}`;
         includeMinutesAndSeconds: false
       });
       document.getElementById("remainingRealDuration").textContent = formatDurationText(remainingRealDurationMs, "Süre doldu", {
+        includeMinutesAndSeconds: false
+      });
+      document.getElementById("totalDuration").textContent = formatDurationText(totalDurationMs, "0 s", {
+        includeMinutesAndSeconds: false
+      });
+      document.getElementById("totalRealDuration").textContent = formatDurationText(totalRealDurationMs, "0 s", {
         includeMinutesAndSeconds: false
       });
       
