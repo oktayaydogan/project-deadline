@@ -273,6 +273,22 @@
       margin-left: 12px;
     }
 
+    .timer.overdue {
+      background: linear-gradient(135deg, rgba(251, 113, 133, .28), rgba(251, 113, 133, .1));
+      border-color: rgba(251, 113, 133, .45);
+      animation: overduePulse 2s ease-in-out infinite;
+    }
+
+    .timer.overdue .timer-label,
+    .timer.overdue .timer-value {
+      color: var(--danger);
+    }
+
+    @keyframes overduePulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(251, 113, 133, 0); }
+      50% { box-shadow: 0 0 28px 2px rgba(251, 113, 133, .35); }
+    }
+
     .info-list {
       display: grid;
       gap: 10px;
@@ -928,8 +944,14 @@
         Gün içinde deadline yaklaştıkça ekstra siren sıklığı otomatik artar.
       </p>
 
-      <div class="timer">
-        <div class="timer-label">Kalan süre</div>
+      <div
+        class="timer"
+        id="timer"
+      >
+        <div
+          class="timer-label"
+          id="timerLabel"
+        >Kalan süre</div>
         <div class="timer-value">
           <div id="remainingDate">-</div>
           <div
@@ -2020,6 +2042,8 @@ time_end=${endTime}`;
 
       if (!project) {
         document.getElementById("mainTitle").textContent = "Proje alarmı";
+        document.getElementById("timer").classList.remove("overdue");
+        document.getElementById("timerLabel").textContent = "Kalan süre";
         document.getElementById("nextSirenAt").textContent = "-";
         document.getElementById("remainingDate").textContent = "-";
         document.getElementById("remainingTime").textContent = "-";
@@ -2065,20 +2089,32 @@ time_end=${endTime}`;
       const totalRealDurationMs = getWeekendExcludedDurationMs(projectStart, deadline);
       document.getElementById("viewStartTime").textContent = projectStart.toLocaleString("tr-TR");
       document.getElementById("viewEndTime").textContent = deadline.toLocaleString("tr-TR");
-      document.getElementById("elapsedPercent").textContent = `Geçen: %${Math.round(elapsedProgress)}`;
+      const overdueMs = expired ? now - deadline : 0;
+      const overduePercent = expired && totalDurationMs > 0 ? (overdueMs / totalDurationMs) * 100 : 0;
+      document.getElementById("elapsedPercent").textContent = `Geçen: %${Math.round(elapsedProgress + overduePercent)}`;
       document.getElementById("elapsedDuration").textContent = formatDurationText(elapsedDurationMs, "0 s", {
         includeMinutesAndSeconds: false
       });
       document.getElementById("elapsedRealDuration").textContent = formatDurationText(elapsedRealDurationMs, "0 s", {
         includeMinutesAndSeconds: false
       });
-      document.getElementById("remainingPercent").textContent = `Kalan: %${Math.round(timeProgress)}`;
-      document.getElementById("remainingDuration").textContent = formatDurationText(diffMs, "Süre doldu", {
-        includeMinutesAndSeconds: false
-      });
-      document.getElementById("remainingRealDuration").textContent = formatDurationText(remainingRealDurationMs, "Süre doldu", {
-        includeMinutesAndSeconds: false
-      });
+      if (expired) {
+        document.getElementById("remainingPercent").textContent = `Aşım: +%${Math.round(overduePercent)}`;
+        document.getElementById("remainingDuration").textContent = "+" + formatDurationText(overdueMs, "0 s", {
+          includeMinutesAndSeconds: false
+        });
+        document.getElementById("remainingRealDuration").textContent = "+" + formatDurationText(getWeekendExcludedDurationMs(deadline, now), "0 s", {
+          includeMinutesAndSeconds: false
+        });
+      } else {
+        document.getElementById("remainingPercent").textContent = `Kalan: %${Math.round(timeProgress)}`;
+        document.getElementById("remainingDuration").textContent = formatDurationText(diffMs, "Süre doldu", {
+          includeMinutesAndSeconds: false
+        });
+        document.getElementById("remainingRealDuration").textContent = formatDurationText(remainingRealDurationMs, "Süre doldu", {
+          includeMinutesAndSeconds: false
+        });
+      }
       document.getElementById("totalDuration").textContent = formatDurationText(totalDurationMs, "0 s", {
         includeMinutesAndSeconds: false
       });
@@ -2108,13 +2144,15 @@ time_end=${endTime}`;
           });
         }
       }
-      const remaining = formatRemaining(diffMs);
-      document.getElementById("remainingDate").textContent = remaining.date;
+      const remaining = formatRemaining(expired ? overdueMs : diffMs);
+      document.getElementById("timer").classList.toggle("overdue", expired);
+      document.getElementById("timerLabel").textContent = expired ? "Süre doldu · aşılan süre" : "Kalan süre";
+      document.getElementById("remainingDate").textContent = expired && remaining.time ? `+${remaining.date}` : remaining.date;
       document.getElementById("remainingTime").textContent = remaining.time;
       document.getElementById("nextInfo").textContent = expired ? "Pasif" : formatInterval(interval);
 
       if (expired) {
-        statusText.textContent = "Deadline geçti";
+        statusText.textContent = `Deadline geçti (+${formatDurationText(overdueMs, "0 s", { includeMinutesAndSeconds: false })})`;
         statusDot.classList.add("inactive");
         return;
       }
