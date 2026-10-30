@@ -1594,7 +1594,7 @@ time_end=${endTime}`;
 
           const candidate = combineDateAndTime(day, hhmm);
           if (candidate <= now) continue;
-          if (candidate > deadline) return null;
+          if (deadline && candidate > deadline) return null;
           return candidate;
         }
       }
@@ -1647,7 +1647,8 @@ time_end=${endTime}`;
 
     function getNextSirenDate(project, now) {
       const deadline = new Date(project.deadline);
-      if (now >= deadline) return null;
+      // After the deadline only the fixed sirens keep ringing
+      if (now >= deadline) return getNextFixedSiren(project, now, null);
 
       const nextFixed = getNextFixedSiren(project, now, deadline);
       const nextExtra = getNextExtraSiren(project, now, deadline);
@@ -1680,7 +1681,6 @@ time_end=${endTime}`;
       const now = new Date();
       const deadline = new Date(project.deadline);
 
-      if (now >= deadline) return false;
       if (!isWeekday(now)) return false;
       if (!isAllowedTime(project, now)) return false;
       if (hasRungThisMinute(now)) return false;
@@ -1688,6 +1688,8 @@ time_end=${endTime}`;
       if (isFixedSirenTime(now)) {
         return true;
       }
+
+      if (now >= deadline) return false;
 
       const remainingMinutes = Math.floor((deadline - now) / 60000);
       const interval = getIntervalMinutes(remainingMinutes);
@@ -2154,6 +2156,10 @@ time_end=${endTime}`;
       if (expired) {
         statusText.textContent = `Deadline geçti (+${formatDurationText(overdueMs, "0 s", { includeMinutesAndSeconds: false })})`;
         statusDot.classList.add("inactive");
+
+        if (shouldRing(project)) {
+          playSiren();
+        }
         return;
       }
 
